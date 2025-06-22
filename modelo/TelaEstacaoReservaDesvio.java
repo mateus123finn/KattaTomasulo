@@ -1,5 +1,4 @@
 package modelo;
-import java.awt.Color;
 import java.util.Vector;
 
 import javax.swing.JInternalFrame;
@@ -9,21 +8,15 @@ import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
-class ModeloReservaSOMA extends AbstractTableModel{
+class ModeloReservaDesvio extends AbstractTableModel{
 
-    private String[] nomeCampos = {"Destino", "OP1", "OP2", "Realizando Operação"};
-    private Object[][] camposTeste = {{"", "", "",false},{"", "", "",false},{"", "", "",false}};
-    private Vector<Integer> listaReserva;
-    private int[] ciclos = new int[3];
+    private String[] nomeCampos = {"Destino", "OP1", "OP2","Realizando Operação"};
+    private Object[][] camposTeste = {{"", "", "",false}};
+    private int ciclos;
     private int custoCiclos;
-    private boolean[] opc = new boolean[3];
+    private boolean opc;
 
-    public ModeloReservaSOMA(int custoCiclos){
-
-        listaReserva = new Vector<>();
-        listaReserva.add(0);
-        listaReserva.add(1);
-        listaReserva.add(2);
+    public ModeloReservaDesvio(int custoCiclos){
 
         this.custoCiclos = custoCiclos;
     }
@@ -55,14 +48,13 @@ class ModeloReservaSOMA extends AbstractTableModel{
 
     public void addInstruction(String retorno, Object OP1, Object OP2, boolean opc){
 
-        int index = this.listaReserva.remove(0);
-        this.camposTeste[index][0] = retorno;
-        this.camposTeste[index][1] = OP1;
-        this.camposTeste[index][2] = OP2;
-        this.camposTeste[index][3] = false;
+        this.camposTeste[0][0] = retorno;
+        this.camposTeste[0][1] = OP1;
+        this.camposTeste[0][2] = OP2;
+        this.camposTeste[0][3] = false;
 
-        this.ciclos[index] = this.custoCiclos;
-        this.opc[index] = opc;
+        this.ciclos = this.custoCiclos;
+        this.opc = opc;
 
         this.fireTableDataChanged();
 
@@ -91,25 +83,23 @@ class ModeloReservaSOMA extends AbstractTableModel{
             if(!camposTeste[i][0].equals("")){
 
                 if(camposTeste[i][1] instanceof Integer && camposTeste[i][2] instanceof Integer){
-                    this.ciclos[i]--;
+                    this.ciclos--;
                     this.camposTeste[i][3] = true;
                     Object[] aux = new Object[2];
-                    if(this.ciclos[i] <= 0){
-                        //System.out.println(this.opc[i]);
-                        if(!this.opc[i]){
+                    if(this.ciclos <= 0){
+                        //System.out.println(this.camposTeste[i][0]);
+                        if(!this.opc){
                             aux[0] = camposTeste[i][0];
-                            aux[1] = (int)camposTeste[i][1] + (int)camposTeste[i][2];
+                            aux[1] = (int)camposTeste[i][1] == (int)camposTeste[i][2];
                         } else {
                             aux[0] = camposTeste[i][0];
-                            aux[1] = (int)camposTeste[i][1] - (int)camposTeste[i][2];
+                            aux[1] = (int)camposTeste[i][1] != (int)camposTeste[i][2];
                         }
 
                         camposTeste[i][0] = "";
                         camposTeste[i][1] = "";
                         camposTeste[i][2] = "";
                         this.camposTeste[i][3] = false;
-
-                        this.listaReserva.add(i);
 
                         resposta.add(aux);
                     }
@@ -118,60 +108,30 @@ class ModeloReservaSOMA extends AbstractTableModel{
         }
 
         this.fireTableDataChanged();
-        return resposta;
-    }
-
-    public void limpaTudo(Vector<String> lista){
-
-        this.listaReserva.clear();
-
-        for (int index = 0; index < this.camposTeste.length; index++) {
-            for (int i = 0; i < lista.size(); i++) {
-                if(camposTeste[index][0].equals(lista.get(i)) || camposTeste[index][0].equals("")){
-                    camposTeste[index][0] = "";
-                    camposTeste[index][1] = "";
-                    camposTeste[index][2] = "";
-                    camposTeste[index][3] = false;
-                    System.out.println(index);
-                    this.listaReserva.add(index);
-                    break;
-                }
-            }
-        }
-
-        this.fireTableDataChanged();
+        return resposta.size() > 0 ? resposta : null;
     }
 
     public boolean temEspaco(){
-        return this.listaReserva.size() > 0;
+        return this.camposTeste[0][0].equals("");
     }
 
     public void resetTudo() {
         Object[] aux = {"", "", "",false};
-        Object[] aux1 = {"", "", "",false};
-        Object[] aux2 = {"", "", "",false};
-        camposTeste[0] = aux;
-        camposTeste[1] = aux1;
-        camposTeste[2] = aux2;
-
-        listaReserva.clear();
-        listaReserva.add(0);
-        listaReserva.add(1);
-        listaReserva.add(2);
+        this.camposTeste[0] = aux;
         this.fireTableDataChanged();
     }
     
 }
 
-public class TelaEstacaoReservaSOMA extends JInternalFrame{
+public class TelaEstacaoReservaDesvio extends JInternalFrame{
 
-    private ModeloReservaSOMA modelo;
+    private ModeloReservaDesvio modelo;
 
-    public TelaEstacaoReservaSOMA(int custoCiclos){
-        super("ER - Somadores");
+    public TelaEstacaoReservaDesvio(int custoCiclos){
+        super("ER - Desvio");
         setSize(400, 150);
         setResizable(false);
-        modelo = new ModeloReservaSOMA(custoCiclos);
+        modelo = new ModeloReservaDesvio(custoCiclos);
 
         DefaultTableCellRenderer dtf = new DefaultTableCellRenderer();
         dtf.setHorizontalAlignment(SwingConstants.CENTER);
@@ -203,10 +163,6 @@ public class TelaEstacaoReservaSOMA extends JInternalFrame{
 
     public boolean temEspaco(){
         return this.modelo.temEspaco();
-    }
-
-    public void limpaTudo(Vector<String> lista){
-        this.modelo.limpaTudo(lista);
     }
 
     public void resetTudo(){

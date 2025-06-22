@@ -10,10 +10,10 @@ import javax.swing.table.DefaultTableCellRenderer;
 
 class ModeloBufferTelaBufferReordenamento extends AbstractTableModel{
 
-    private String[] nomeCampos = {"ID", "Instrução", "Destino"};
-    private Vector<String[]> camposTeste = new Vector<>();
+    private String[] nomeCampos = {"ID", "Instrução", "Destino", "Pronta para Escrita"};
+    private Vector<Object[]> camposTeste = new Vector<>();
     private Vector<String> listaBuffer = new Vector<>();
-    private Object[][] repostaAguarde = new Object[6][2];
+    private int[] repostaAguarde = new int[6];
 
     public ModeloBufferTelaBufferReordenamento(){
         listaBuffer.add("#0");
@@ -22,13 +22,19 @@ class ModeloBufferTelaBufferReordenamento extends AbstractTableModel{
         listaBuffer.add("#3");
         listaBuffer.add("#4");
         listaBuffer.add("#5");
+    }
 
-        repostaAguarde[0][1] = false;
-        repostaAguarde[1][1] = false;
-        repostaAguarde[2][1] = false;
-        repostaAguarde[3][1] = false;
-        repostaAguarde[4][1] = false;
-        repostaAguarde[5][1] = false;
+    public void resetTudo(){
+        camposTeste = new Vector<>();
+        listaBuffer = new Vector<>();
+        repostaAguarde = new int[6];
+        listaBuffer.add("#0");
+        listaBuffer.add("#1");
+        listaBuffer.add("#2");
+        listaBuffer.add("#3");
+        listaBuffer.add("#4");
+        listaBuffer.add("#5");
+        this.fireTableDataChanged();
     }
 
     @Override
@@ -43,7 +49,7 @@ class ModeloBufferTelaBufferReordenamento extends AbstractTableModel{
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
-        return this.camposTeste.get(rowIndex)[columnIndex];
+        return this.camposTeste.get(rowIndex)[columnIndex] == null ? "X" : this.camposTeste.get(rowIndex)[columnIndex];
     }
 
     @Override
@@ -58,11 +64,11 @@ class ModeloBufferTelaBufferReordenamento extends AbstractTableModel{
 
 
     public String addData(String opc, String resposta){
-        String[] aux = {this.listaBuffer.remove(0),opc,resposta};
+        Object[] aux = {this.listaBuffer.remove(0),opc,resposta,false};
         this.camposTeste.add(aux);
         this.fireTableDataChanged();
 
-        return aux[0];
+        return (String)aux[0];
     }
 
     public void atualizaResposta(Vector<Object[]> CDB){
@@ -70,11 +76,16 @@ class ModeloBufferTelaBufferReordenamento extends AbstractTableModel{
             for (Object[] item : this.camposTeste) {
                 if(resposta[0].equals(item[0])){
                     int index = Integer.parseInt(((String)item[0]).replace('#', '0'));
-                    repostaAguarde[index][1] = true;
-                    repostaAguarde[index][0] = resposta[1];
+                    item[3] = true;
+                    if(resposta[1] instanceof Integer)
+                    repostaAguarde[index] = (int)resposta[1];
                 }
             }
         }
+    }
+
+    public boolean temEspacao(){
+        return this.camposTeste.size() < 6;
     }
 
     public Object[] popBuffer(){
@@ -85,19 +96,33 @@ class ModeloBufferTelaBufferReordenamento extends AbstractTableModel{
             Object[] aux = this.camposTeste.get(0);
 
             int index = Integer.parseInt(((String)aux[0]).replace('#', '0'));
-            if ((boolean)repostaAguarde[index][1]) {
-                repostaAguarde[index][1] = false;
+            if ((boolean)aux[3]) {
                 this.listaBuffer.add((String)aux[0]);
-                Object[] auxResposta = {aux[0],repostaAguarde[index][0], aux[2]};
+                Object[] auxResposta = {aux[0],repostaAguarde[index], aux[2]};
                 this.camposTeste.remove(0);
                 resposta = auxResposta;
             }
         }
 
-
         this.fireTableDataChanged();
         return resposta;
 
+    }
+
+    public Vector<String> limpaTudo(String posicao){
+        Vector<String> listaRegistradores = new Vector<>();
+        for (int index = 0; index < this.camposTeste.size(); index++) {
+            if(this.camposTeste.get(index)[0].equals(posicao)){
+                while (this.camposTeste.size() > index + 1) {
+                    Object[] aux = this.camposTeste.remove(index+1);
+                    listaRegistradores.add((String)aux[0]);
+                    this.listaBuffer.add((String)aux[0]);
+
+                    System.out.println(aux[0]);
+                }
+            }
+        }
+        return listaRegistradores;
     }
     
 }
@@ -108,7 +133,7 @@ public class TelaBufferReordenamento extends JInternalFrame{
 
     public TelaBufferReordenamento(){
         super("Buffer de Reordenamento");
-        setSize(450, 210);
+        setSize(470, 210);
         setResizable(false);
         modelo = new ModeloBufferTelaBufferReordenamento();
 
@@ -136,7 +161,19 @@ public class TelaBufferReordenamento extends JInternalFrame{
         return this.modelo.popBuffer();
     }
 
+    public boolean temEspacao(){
+        return this.modelo.temEspacao();
+    }
+
     public void atualizaResposta(Vector<Object[]> CDB){
         this.modelo.atualizaResposta(CDB);
+    }
+
+    public Vector<String> limpaTudo(String posicao){
+        return this.modelo.limpaTudo(posicao);
+    }
+
+    public void resetTudo(){
+        this.modelo.resetTudo();
     }
 }
