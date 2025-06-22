@@ -1,3 +1,4 @@
+package modelo;
 public class BancoRegistradores {
     private int registradores[] = new int[32];
     private boolean acessoReg[] = new boolean[32];
