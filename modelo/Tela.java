@@ -24,7 +24,9 @@ public class Tela extends JFrame implements ActionListener{
     private TelaTabelaInstrucoes instrucoes = new TelaTabelaInstrucoes();
     private TelaBufferReordenamento buffer = new TelaBufferReordenamento();
     private TelaTabelaRegistradores registradores = new TelaTabelaRegistradores();
-    private TelaEstacaoReservaSOMA soma = new TelaEstacaoReservaSOMA();
+    private TelaEstacaoReservaSOMA soma = new TelaEstacaoReservaSOMA(2);
+    private TelaEstacaoReservaMUL mul = new TelaEstacaoReservaMUL(5);
+    private TelaEstacaoReservaDesvio desvio = new TelaEstacaoReservaDesvio(2);
 
     public Tela(){
         super("Katta Tomassulo Simulator");
@@ -48,7 +50,9 @@ public class Tela extends JFrame implements ActionListener{
 
         JDesktopPane teste = new JDesktopPane();
         teste.add(this.instrucoes);
+        teste.add(this.desvio);
         teste.add(this.soma);
+        teste.add(this.mul);
         teste.add(this.registradores);
         teste.add(this.buffer);
         teste.setBorder(BorderFactory.createLoweredBevelBorder());
@@ -63,9 +67,9 @@ public class Tela extends JFrame implements ActionListener{
         add(clock, c);
 
         JMenuBar menu = new JMenuBar();
-        JMenu aba = new JMenu("Arquivo");
+        JMenu aba = new JMenu("Instruções");
         menu.add(aba);
-        JMenuItem abrirArquivo = new JMenuItem("Abrir Arquivo");
+        JMenuItem abrirArquivo = new JMenuItem("Importar Instruções");
         abrirArquivo.addActionListener(this);
         aba.add(abrirArquivo);
 
@@ -76,19 +80,25 @@ public class Tela extends JFrame implements ActionListener{
     @Override
     public void actionPerformed(ActionEvent arg0) {
         
-        if(arg0.getActionCommand().equals("Abrir Arquivo")){
+        if(arg0.getActionCommand().equals("Importar Instruções")){
             JFileChooser arquivo = new JFileChooser();
             arquivo.setFileFilter(new FileNameExtensionFilter("Arquivo de Intruções (.KTI)", "KTI"));
             arquivo.showOpenDialog(null);
 
             if(arquivo.getSelectedFile() != null){
+                instrucoes.resetTudo();
+                buffer.resetTudo();
+                registradores.resetTudo();
+                soma.resetTudo();
+                mul.resetTudo();
+                desvio.resetTudo();
                 this.instrucoes.initializeInstructions(arquivo.getSelectedFile());
             }
         } else {
 
             Vector<Object[]> CDB = new Vector<>();
 
-            System.out.println(arg0.getActionCommand());
+            //System.out.println(arg0.getActionCommand());
             ((JButton)arg0.getSource()).removeActionListener(this);
             
             Object[] respBuffer = this.buffer.popBuffer();
@@ -101,10 +111,30 @@ public class Tela extends JFrame implements ActionListener{
             if(respSoma != null){
                 CDB.addAll(respSoma);
             }
+            Vector<Object[]> respMul = this.mul.realizaOperacao();
+            if(respMul != null){
+                CDB.addAll(respMul);
+            }
+            this.desvio.atualizaRegsCDB(CDB);
             this.soma.atualizaRegsCDB(CDB);
+            this.mul.atualizaRegsCDB(CDB);
             this.buffer.atualizaResposta(CDB);
 
-            if(this.instrucoes.acabouInstrucoes()){
+            Vector<Object[]> respDesvio = this.desvio.realizaOperacao();
+            if(respDesvio != null){
+                this.buffer.atualizaResposta(respDesvio);
+                this.instrucoes.verificaAcerto((boolean)respDesvio.get(0)[1]);
+                if(!(boolean)respDesvio.get(0)[1]){
+                    Vector<String> listaBuffer = this.buffer.limpaTudo((String)respDesvio.get(0)[0]);
+                    this.soma.limpaTudo(listaBuffer);
+                    this.mul.limpaTudo(listaBuffer);
+                    this.registradores.limpaTudo(listaBuffer);
+                    ((JButton)arg0.getSource()).addActionListener(this);
+                    return;
+                }
+            }
+
+            if(this.instrucoes.acabouInstrucoes() || !this.buffer.temEspacao()){
                 ((JButton)arg0.getSource()).addActionListener(this);
                 return; 
             }
@@ -114,15 +144,35 @@ public class Tela extends JFrame implements ActionListener{
                     ((JButton)arg0.getSource()).addActionListener(this);
                     return;        
                 }
+            } else if(this.instrucoes.getNextInstructionType().equals("MUL")){
+                if(!this.mul.temEspaco()){
+                    ((JButton)arg0.getSource()).addActionListener(this);
+                    return;        
+                }
+            } else if(this.instrucoes.getNextInstructionType().equals("BEQ") || this.instrucoes.getNextInstructionType().equals("BNE")){
+                if(!this.desvio.temEspaco()){
+                    ((JButton)arg0.getSource()).addActionListener(this);
+                    return;        
+                }
             }
 
             
             String[] instrucao_raw = this.instrucoes.getNextInstruction();
-            String renomeacao = this.buffer.addBuffer(instrucao_raw[0]+" "+instrucao_raw[1]+" "+instrucao_raw[2]+" "+instrucao_raw[3], instrucao_raw[1]);
-            Object[] regs = this.registradores.getRegs(instrucao_raw[1], renomeacao, instrucao_raw[2], instrucao_raw[3]);
-            
+            String renomeacao = this.buffer.addBuffer(instrucao_raw[0]+" "+instrucao_raw[1]+" "+instrucao_raw[2]+" "+instrucao_raw[3], instrucao_raw[0].equals("BEQ") || instrucao_raw[0].equals("BNE") ? null : instrucao_raw[1]);
+            Object[] regs;
+            if(instrucao_raw[0].equals("BEQ") || instrucao_raw[0].equals("BNE")){
+                //System.out.println(instrucao_raw[1]+" - "+instrucao_raw[2]);
+                regs = this.registradores.getRegs(null, renomeacao, instrucao_raw[1], instrucao_raw[2]);
+            } else {
+                regs = this.registradores.getRegs(instrucao_raw[1], renomeacao, instrucao_raw[2], instrucao_raw[3]);
+            }
+
             if(instrucao_raw[0].equals("ADD") || instrucao_raw[0].equals("SUB")){
-                this.soma.addInstruction(renomeacao, regs[0], regs[1]);
+                this.soma.addInstruction(renomeacao, regs[0], regs[1], instrucao_raw[0].equals("SUB"));
+            } else if(instrucao_raw[0].equals("MUL")){
+                this.mul.addInstruction(renomeacao, regs[0], regs[1]);
+            } else if(instrucao_raw[0].equals("BEQ") || instrucao_raw[0].equals("BNE")){
+                this.desvio.addInstruction(renomeacao, regs[0], regs[1], instrucao_raw[0].equals("BNE"));
             }
             
             

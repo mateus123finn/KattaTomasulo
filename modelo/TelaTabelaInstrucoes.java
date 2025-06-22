@@ -1,6 +1,8 @@
 package modelo;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Vector;
 import javax.swing.JInternalFrame;
@@ -10,10 +12,10 @@ import javax.swing.table.AbstractTableModel;
 
 class ModeloInstrucoes extends AbstractTableModel{
 
-    private String[] nomeCampos = {"HelenoBrian"};
-    private Vector<String> instrucoes;
+    private String[] nomeCampos = {"HelenoBrian","Sapato"};
+    private Vector<Object[]> instrucoes;
 
-    public ModeloInstrucoes(Vector<String> instrucoes){
+    public ModeloInstrucoes(Vector<Object[]> instrucoes){
         this.instrucoes = instrucoes;
     }
 
@@ -29,7 +31,7 @@ class ModeloInstrucoes extends AbstractTableModel{
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
-        return this.instrucoes.get(rowIndex);
+        return this.instrucoes.get(rowIndex)[columnIndex];
     }
 
     @Override
@@ -46,10 +48,28 @@ class ModeloInstrucoes extends AbstractTableModel{
 
 public class TelaTabelaInstrucoes extends JInternalFrame{
     
-    private Vector<String> nomes = new Vector<>();
+    private Vector<Object[]> nomes = new Vector<>();
     private JTable tabelaInstrucoes;
+    private Vector<Object[]> instrucoesMemoria = new Vector<>(); 
+    private Map<String, Integer> labelEndereco = new HashMap<>();
     private ModeloInstrucoes modeloInstrucoes = new ModeloInstrucoes(nomes);
+
+    private Vector<Integer> salvaPuloGato = new Vector<>();
+
+    private int PC = 0;
+    private int offset = 0;
     
+    public void resetTudo(){
+        nomes.clear();
+        instrucoesMemoria.clear();
+        labelEndereco.clear();
+        salvaPuloGato.clear();
+        PC = 0;
+        offset = 0;
+
+        this.modeloInstrucoes.fireTableDataChanged();
+    }
+
     public TelaTabelaInstrucoes(){
         super("Fila de Instruções");
         setSize(300, 175);
@@ -67,13 +87,34 @@ public class TelaTabelaInstrucoes extends JInternalFrame{
     public void initializeInstructions(File instrucoesRaw){
         try {
             Scanner sc = new Scanner(instrucoesRaw);
-
+            int i = 0;
             while (sc.hasNextLine()) {
-                this.nomes.add(sc.nextLine());
+
+                String linha_raw = sc.nextLine();
+
+                if(linha_raw.contains(":")){
+                    linha_raw = linha_raw.replace(":", "");
+                    labelEndereco.put(linha_raw, i);
+                    continue;
+                }
+
+                Object[] aux = {String.format("%1$08X", i),linha_raw};
+                i += 4;
+                this.instrucoesMemoria.add(aux);
+                //this.nomes.add(aux);
             }
 
-            for (String ins : this.nomes) {
-                System.out.println(ins);
+            for (int a = 0; a < this.instrucoesMemoria.size(); a++) {
+                String[] aux = ((String)this.instrucoesMemoria.get(a)[1]).split(" ");
+                if(aux[0].equals("BEQ") || aux[0].equals("BNE")){
+                    //System.out.println(aux[aux.length - 1]+" - "+this.labelEndereco.get(aux[aux.length - 1]));
+                    this.instrucoesMemoria.get(a)[1] = new String(aux[0]+" "+aux[1]+" "+aux[2]+" "+this.labelEndereco.get(aux[aux.length - 1]));
+                }
+            }
+
+            for (int j = 0; j < (this.instrucoesMemoria.size() < 6 ? this.instrucoesMemoria.size() : 6); j++) {
+                this.nomes.add(this.instrucoesMemoria.get(j));
+                offset++;
             }
 
             this.modeloInstrucoes.fireTableDataChanged();
@@ -85,7 +126,7 @@ public class TelaTabelaInstrucoes extends JInternalFrame{
     }
 
     public String getNextInstructionType(){
-        return this.nomes.size() > 0 ? this.nomes.get(0).split(" ")[0] : "";
+        return this.nomes.size() > 0 ? ((String)this.nomes.get(0)[1]).split(" ")[0] : "";
     }
 
     public boolean acabouInstrucoes(){
@@ -93,11 +134,50 @@ public class TelaTabelaInstrucoes extends JInternalFrame{
     }
 
     public String[] getNextInstruction(){
-        String instrucao = this.nomes.remove(0);
-        this.modeloInstrucoes.fireTableDataChanged();
+        String instrucao = (String)this.nomes.remove(0)[1];
         String[] partes = instrucao.split(" ");
+        PC++;
+
+        if(partes[0].equals("BEQ") || partes[0].equals("BNE")){
+            //Always Branch
+            salvaPuloGato.add(PC);
+            PC = Integer.parseInt(partes[partes.length - 1]) / 4;
+            offset = PC;
+            this.nomes.clear();
+            for (int j = 0; j < (this.instrucoesMemoria.size() < 6 ? this.instrucoesMemoria.size() : 6); j++) {
+                this.nomes.add(this.instrucoesMemoria.get(j+PC));
+                offset++;
+            }
+
+        } 
+
+        if(offset < this.instrucoesMemoria.size()){
+            this.nomes.add(this.instrucoesMemoria.get(offset++));
+        }
+
+        this.modeloInstrucoes.fireTableDataChanged();
 
         return partes;
+    }
+
+    public void verificaAcerto(boolean acerto){
+        if(!acerto){
+            //Ai ferrou a bicicleta
+            PC = this.salvaPuloGato.remove(0);
+            offset = PC;
+
+            this.nomes.clear();
+            for (int j = 0; j < 6; j++) {
+                if(this.instrucoesMemoria.size() <= j+PC) break;
+                this.nomes.add(this.instrucoesMemoria.get(j+PC));
+                offset++;
+            }
+
+            this.modeloInstrucoes.fireTableDataChanged();
+
+        } else {
+            this.salvaPuloGato.remove(0);
+        }
     }
 
 }

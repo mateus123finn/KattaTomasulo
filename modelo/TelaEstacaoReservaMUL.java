@@ -1,5 +1,4 @@
 package modelo;
-import java.awt.Color;
 import java.util.Vector;
 
 import javax.swing.JInternalFrame;
@@ -9,21 +8,20 @@ import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
-class ModeloReservaSOMA extends AbstractTableModel{
+class ModeloReservaMUL extends AbstractTableModel{
 
     private String[] nomeCampos = {"Destino", "OP1", "OP2", "Realizando Operação"};
-    private Object[][] camposTeste = {{"", "", "",false},{"", "", "",false},{"", "", "",false}};
+    private Object[][] camposTeste = {{"", "", "",false},{"", "", "",false}};
     private Vector<Integer> listaReserva;
-    private int[] ciclos = new int[3];
+    private int[] ciclos = new int[2];
     private int custoCiclos;
-    private boolean[] opc = new boolean[3];
+    //private boolean[] opc = new boolean[2];
 
-    public ModeloReservaSOMA(int custoCiclos){
+    public ModeloReservaMUL(int custoCiclos){
 
         listaReserva = new Vector<>();
         listaReserva.add(0);
         listaReserva.add(1);
-        listaReserva.add(2);
 
         this.custoCiclos = custoCiclos;
     }
@@ -53,7 +51,7 @@ class ModeloReservaSOMA extends AbstractTableModel{
         return getValueAt(0, columnIndex).getClass();
     }
 
-    public void addInstruction(String retorno, Object OP1, Object OP2, boolean opc){
+    public void addInstruction(String retorno, Object OP1, Object OP2){
 
         int index = this.listaReserva.remove(0);
         this.camposTeste[index][0] = retorno;
@@ -62,7 +60,7 @@ class ModeloReservaSOMA extends AbstractTableModel{
         this.camposTeste[index][3] = false;
 
         this.ciclos[index] = this.custoCiclos;
-        this.opc[index] = opc;
+        //this.opc[index] = opc;
 
         this.fireTableDataChanged();
 
@@ -96,13 +94,13 @@ class ModeloReservaSOMA extends AbstractTableModel{
                     Object[] aux = new Object[2];
                     if(this.ciclos[i] <= 0){
                         //System.out.println(this.opc[i]);
-                        if(!this.opc[i]){
+                        //if(!this.opc[i]){
                             aux[0] = camposTeste[i][0];
-                            aux[1] = (int)camposTeste[i][1] + (int)camposTeste[i][2];
-                        } else {
-                            aux[0] = camposTeste[i][0];
-                            aux[1] = (int)camposTeste[i][1] - (int)camposTeste[i][2];
-                        }
+                            aux[1] = (int)camposTeste[i][1] * (int)camposTeste[i][2];
+                        //} else {
+                        //    aux[0] = camposTeste[i][0];
+                        //    aux[1] = (int)camposTeste[i][1] - (int)camposTeste[i][2];
+                        //}
 
                         camposTeste[i][0] = "";
                         camposTeste[i][1] = "";
@@ -121,8 +119,11 @@ class ModeloReservaSOMA extends AbstractTableModel{
         return resposta;
     }
 
-    public void limpaTudo(Vector<String> lista){
+    public boolean temEspaco(){
+        return this.listaReserva.size() > 0;
+    }
 
+    public void limpaTudo(Vector<String> lista){
         this.listaReserva.clear();
 
         for (int index = 0; index < this.camposTeste.length; index++) {
@@ -132,7 +133,6 @@ class ModeloReservaSOMA extends AbstractTableModel{
                     camposTeste[index][1] = "";
                     camposTeste[index][2] = "";
                     camposTeste[index][3] = false;
-                    System.out.println(index);
                     this.listaReserva.add(index);
                     break;
                 }
@@ -142,36 +142,29 @@ class ModeloReservaSOMA extends AbstractTableModel{
         this.fireTableDataChanged();
     }
 
-    public boolean temEspaco(){
-        return this.listaReserva.size() > 0;
-    }
-
     public void resetTudo() {
         Object[] aux = {"", "", "",false};
         Object[] aux1 = {"", "", "",false};
-        Object[] aux2 = {"", "", "",false};
         camposTeste[0] = aux;
         camposTeste[1] = aux1;
-        camposTeste[2] = aux2;
 
         listaReserva.clear();
         listaReserva.add(0);
         listaReserva.add(1);
-        listaReserva.add(2);
         this.fireTableDataChanged();
     }
     
 }
 
-public class TelaEstacaoReservaSOMA extends JInternalFrame{
+public class TelaEstacaoReservaMUL extends JInternalFrame{
 
-    private ModeloReservaSOMA modelo;
+    private ModeloReservaMUL modelo;
 
-    public TelaEstacaoReservaSOMA(int custoCiclos){
-        super("ER - Somadores");
+    public TelaEstacaoReservaMUL(int custoCiclos){
+        super("ER - Multiplicadores");
         setSize(400, 150);
         setResizable(false);
-        modelo = new ModeloReservaSOMA(custoCiclos);
+        modelo = new ModeloReservaMUL(custoCiclos);
 
         DefaultTableCellRenderer dtf = new DefaultTableCellRenderer();
         dtf.setHorizontalAlignment(SwingConstants.CENTER);
@@ -189,8 +182,8 @@ public class TelaEstacaoReservaSOMA extends JInternalFrame{
         setVisible(true);
     }
 
-    public void addInstruction(String resposta, Object OP1, Object OP2, boolean opc){
-        this.modelo.addInstruction(resposta, OP1, OP2, opc);
+    public void addInstruction(String resposta, Object OP1, Object OP2){
+        this.modelo.addInstruction(resposta, OP1, OP2);
     }
 
     public void atualizaRegsCDB(Vector<Object[]> CDB){
