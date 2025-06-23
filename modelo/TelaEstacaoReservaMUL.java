@@ -17,6 +17,8 @@ class ModeloReservaMUL extends AbstractTableModel{
     private int custoCiclos;
     //private boolean[] opc = new boolean[2];
 
+    private boolean funcionando = false;
+
     public ModeloReservaMUL(int custoCiclos){
 
         listaReserva = new Vector<>();
@@ -84,11 +86,12 @@ class ModeloReservaMUL extends AbstractTableModel{
     public Vector<Object[]> realizaOperacao(){
 
         Vector<Object[]> resposta = new Vector<>();
-
+        funcionando = false;
         for (int i = 0; i < camposTeste.length; i++) {
             if(!camposTeste[i][0].equals("")){
 
                 if(camposTeste[i][1] instanceof Integer && camposTeste[i][2] instanceof Integer){
+                    funcionando = true;
                     this.ciclos[i]--;
                     this.camposTeste[i][3] = true;
                     Object[] aux = new Object[2];
@@ -143,6 +146,7 @@ class ModeloReservaMUL extends AbstractTableModel{
     }
 
     public void resetTudo() {
+        funcionando = false;
         Object[] aux = {"", "", "",false};
         Object[] aux1 = {"", "", "",false};
         camposTeste[0] = aux;
@@ -152,6 +156,10 @@ class ModeloReservaMUL extends AbstractTableModel{
         listaReserva.add(0);
         listaReserva.add(1);
         this.fireTableDataChanged();
+    }
+
+    public boolean funcionando(){
+        return funcionando;
     }
     
 }
@@ -204,5 +212,9 @@ public class TelaEstacaoReservaMUL extends JInternalFrame{
 
     public void resetTudo(){
         this.modelo.resetTudo();
+    }
+
+    public boolean funcionando(){
+        return this.modelo.funcionando();
     }
 }
