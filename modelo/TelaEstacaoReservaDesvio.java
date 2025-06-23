@@ -16,6 +16,8 @@ class ModeloReservaDesvio extends AbstractTableModel{
     private int custoCiclos;
     private boolean opc;
 
+    private boolean funcionando = false;
+
     public ModeloReservaDesvio(int custoCiclos){
 
         this.custoCiclos = custoCiclos;
@@ -78,11 +80,12 @@ class ModeloReservaDesvio extends AbstractTableModel{
     public Vector<Object[]> realizaOperacao(){
 
         Vector<Object[]> resposta = new Vector<>();
-
+        funcionando = false;
         for (int i = 0; i < camposTeste.length; i++) {
             if(!camposTeste[i][0].equals("")){
 
                 if(camposTeste[i][1] instanceof Integer && camposTeste[i][2] instanceof Integer){
+                    funcionando = true;
                     this.ciclos--;
                     this.camposTeste[i][3] = true;
                     Object[] aux = new Object[2];
@@ -115,7 +118,12 @@ class ModeloReservaDesvio extends AbstractTableModel{
         return this.camposTeste[0][0].equals("");
     }
 
+    public boolean funcionando(){
+        return funcionando;
+    }
+
     public void resetTudo() {
+        funcionando = false;
         Object[] aux = {"", "", "",false};
         this.camposTeste[0] = aux;
         this.fireTableDataChanged();
@@ -167,5 +175,9 @@ public class TelaEstacaoReservaDesvio extends JInternalFrame{
 
     public void resetTudo(){
         this.modelo.resetTudo();
+    }
+
+    public boolean funcionando(){
+        return this.modelo.funcionando();
     }
 }

@@ -18,6 +18,8 @@ class ModeloReservaSOMA extends AbstractTableModel{
     private int custoCiclos;
     private boolean[] opc = new boolean[3];
 
+    private boolean funcionando = false;
+
     public ModeloReservaSOMA(int custoCiclos){
 
         listaReserva = new Vector<>();
@@ -86,11 +88,12 @@ class ModeloReservaSOMA extends AbstractTableModel{
     public Vector<Object[]> realizaOperacao(){
 
         Vector<Object[]> resposta = new Vector<>();
-
+        funcionando = false;
         for (int i = 0; i < camposTeste.length; i++) {
             if(!camposTeste[i][0].equals("")){
 
                 if(camposTeste[i][1] instanceof Integer && camposTeste[i][2] instanceof Integer){
+                    funcionando = true;
                     this.ciclos[i]--;
                     this.camposTeste[i][3] = true;
                     Object[] aux = new Object[2];
@@ -132,7 +135,7 @@ class ModeloReservaSOMA extends AbstractTableModel{
                     camposTeste[index][1] = "";
                     camposTeste[index][2] = "";
                     camposTeste[index][3] = false;
-                    System.out.println(index);
+                    //System.out.println(index);
                     this.listaReserva.add(index);
                     break;
                 }
@@ -146,7 +149,12 @@ class ModeloReservaSOMA extends AbstractTableModel{
         return this.listaReserva.size() > 0;
     }
 
+    public boolean funcionando(){
+        return funcionando;
+    }
+
     public void resetTudo() {
+        funcionando = false;
         Object[] aux = {"", "", "",false};
         Object[] aux1 = {"", "", "",false};
         Object[] aux2 = {"", "", "",false};
@@ -211,5 +219,9 @@ public class TelaEstacaoReservaSOMA extends JInternalFrame{
 
     public void resetTudo(){
         this.modelo.resetTudo();
+    }
+
+    public boolean funcionando(){
+        return this.modelo.funcionando();
     }
 }

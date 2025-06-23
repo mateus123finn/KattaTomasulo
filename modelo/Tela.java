@@ -11,9 +11,12 @@ import javax.swing.JButton;
 import javax.swing.JDesktopPane;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.DimensionUIResource;
@@ -24,12 +27,17 @@ public class Tela extends JFrame implements ActionListener{
     private TelaTabelaInstrucoes instrucoes = new TelaTabelaInstrucoes();
     private TelaBufferReordenamento buffer = new TelaBufferReordenamento();
     private TelaTabelaRegistradores registradores = new TelaTabelaRegistradores();
-    private TelaEstacaoReservaSOMA soma = new TelaEstacaoReservaSOMA(2);
+    private TelaEstacaoReservaSOMA soma = new TelaEstacaoReservaSOMA(1);
     private TelaEstacaoReservaMUL mul = new TelaEstacaoReservaMUL(5);
     private TelaEstacaoReservaDesvio desvio = new TelaEstacaoReservaDesvio(2);
+    private JButton clock = new JButton("Próximo Ciclo de Clock");
+
+    private int CiclosTotais = 0;
+    private int CiclosFuncionais = 0;
+    private int QntInstrucoes = 0;
 
     public Tela(){
-        super("Katta Tomassulo Simulator");
+        super("Katta Tomasulo Simulator");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(1280, 720);
         setLocationRelativeTo(null);
@@ -62,8 +70,8 @@ public class Tela extends JFrame implements ActionListener{
         c.gridx = 1;
         c.anchor = GridBagConstraints.LAST_LINE_END;
         c.insets = new Insets(0, 10, 10, 10);
-        JButton clock = new JButton("Próximo Ciclo de Clock");
         clock.addActionListener(this);
+        clock.setEnabled(false);
         add(clock, c);
 
         JMenuBar menu = new JMenuBar();
@@ -86,16 +94,20 @@ public class Tela extends JFrame implements ActionListener{
             arquivo.showOpenDialog(null);
 
             if(arquivo.getSelectedFile() != null){
+                CiclosTotais = 0;
+                CiclosFuncionais = 0;
+                clock.setEnabled(true);
                 instrucoes.resetTudo();
                 buffer.resetTudo();
                 registradores.resetTudo();
                 soma.resetTudo();
                 mul.resetTudo();
                 desvio.resetTudo();
-                this.instrucoes.initializeInstructions(arquivo.getSelectedFile());
+                this.QntInstrucoes = this.instrucoes.initializeInstructions(arquivo.getSelectedFile());
             }
         } else {
 
+            CiclosTotais ++;
             Vector<Object[]> CDB = new Vector<>();
 
             //System.out.println(arg0.getActionCommand());
@@ -134,8 +146,24 @@ public class Tela extends JFrame implements ActionListener{
                 }
             }
 
+            if(this.soma.funcionando() || this.mul.funcionando() || this.desvio.funcionando()){
+                CiclosFuncionais ++;
+            }
+
             if(this.instrucoes.acabouInstrucoes() || !this.buffer.temEspacao()){
                 ((JButton)arg0.getSource()).addActionListener(this);
+                if(this.buffer.vazio()){
+
+                    JPanel panel = new JPanel();
+                    panel.add(new JLabel("Total de Ciclos de Clock: "+CiclosTotais+"\n"));
+                    panel.add(new JLabel("Total de Ciclos de Clock Funcionais: "+CiclosFuncionais+"\n"));
+                    panel.add(new JLabel("Instruções por Ciclo: "+((QntInstrucoes*1.0)/CiclosFuncionais)+"\n"));
+
+                    JOptionPane.showMessageDialog(null, panel,"Resultados da Execução",JOptionPane.OK_OPTION);
+
+                    System.out.println(CiclosFuncionais);
+                    clock.setEnabled(false);
+                }
                 return; 
             }
 
@@ -174,9 +202,9 @@ public class Tela extends JFrame implements ActionListener{
             } else if(instrucao_raw[0].equals("BEQ") || instrucao_raw[0].equals("BNE")){
                 this.desvio.addInstruction(renomeacao, regs[0], regs[1], instrucao_raw[0].equals("BNE"));
             }
-            
-            
+
             ((JButton)arg0.getSource()).addActionListener(this);
+
         }
 
     }

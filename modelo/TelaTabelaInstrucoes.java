@@ -84,7 +84,7 @@ public class TelaTabelaInstrucoes extends JInternalFrame{
         setVisible(true);
     }
 
-    public void initializeInstructions(File instrucoesRaw){
+    public int initializeInstructions(File instrucoesRaw){
         try {
             Scanner sc = new Scanner(instrucoesRaw);
             int i = 0;
@@ -118,11 +118,12 @@ public class TelaTabelaInstrucoes extends JInternalFrame{
             }
 
             this.modeloInstrucoes.fireTableDataChanged();
-            //this.repaint();
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+
+        return this.instrucoesMemoria.size();
     }
 
     public String getNextInstructionType(){
@@ -144,7 +145,8 @@ public class TelaTabelaInstrucoes extends JInternalFrame{
             PC = Integer.parseInt(partes[partes.length - 1]) / 4;
             offset = PC;
             this.nomes.clear();
-            for (int j = 0; j < (this.instrucoesMemoria.size() < 6 ? this.instrucoesMemoria.size() : 6); j++) {
+            for (int j = 0; j < 6; j++) {
+                if(this.instrucoesMemoria.size() <= j+PC) break;
                 this.nomes.add(this.instrucoesMemoria.get(j+PC));
                 offset++;
             }

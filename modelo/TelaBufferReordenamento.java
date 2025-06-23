@@ -118,11 +118,15 @@ class ModeloBufferTelaBufferReordenamento extends AbstractTableModel{
                     listaRegistradores.add((String)aux[0]);
                     this.listaBuffer.add((String)aux[0]);
 
-                    System.out.println(aux[0]);
+                    //System.out.println(aux[0]);
                 }
             }
         }
         return listaRegistradores;
+    }
+
+    public boolean vazio() {
+        return this.camposTeste.size() <= 0;
     }
     
 }
@@ -175,5 +179,9 @@ public class TelaBufferReordenamento extends JInternalFrame{
 
     public void resetTudo(){
         this.modelo.resetTudo();
+    }
+
+    public boolean vazio(){
+        return this.modelo.vazio();
     }
 }

@@ -1,0 +1,10 @@
+main:
+ADD R0 4 0
+MUL R1 1 R0
+BEQ R0 R1 parte_2
+ADD R4 32 R1
+parte_2:
+ADD R4 10 6
+ADD R4 10 6
+ADD R4 10 6
+ADD R4 10 6
